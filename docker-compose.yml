@@ -1,0 +1,15 @@
+version: '3.1'
+services:
+  hrbot:
+    build:
+      context: .
+    container_name: HRBot
+    command: uvicorn main:app --host 127.0.0.1 --port 3055
+    restart: always
+    volumes:
+      - ./:/usr/src/app/
+    ports:
+      - "3055:3055"
+
+
+

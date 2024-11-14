@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+aiogram
+python-dotenv
+aiologger
+aiosqlite
+aiohttp
+httpx
+jinja2
+python-multipart
+sqlalchemy
+lxml
+beautifulsoup4
+pandas
+
+
