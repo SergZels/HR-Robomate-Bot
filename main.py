@@ -7,7 +7,7 @@ import uvicorn
 import asyncio
 import os
 from contextlib import asynccontextmanager
-from biznesLogic import router, logger,send_telegram_message
+from biznesLogic import router, logger
 from init import bot,SERV,WebhookURL,URL
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -38,7 +38,7 @@ app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
 origins = [
    "http://localhost",
    "http://127.0.0.1",
-   "http://localhost:5173",
+   "http://localhost:5033",
  ]
 
 app.add_middleware(
