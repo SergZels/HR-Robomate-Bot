@@ -5,15 +5,15 @@ from fastapi.responses import HTMLResponse
 from fastapi.requests import Request
 import uvicorn
 import asyncio
-import os
 from contextlib import asynccontextmanager
 from biznesLogic import router, logger
-from init import bot,SERV,WebhookURL,URL
-from fastapi.middleware.cors import CORSMiddleware
+import json
+from init import bot,SERV,WebhookURL,URL,redis
+from fastapi.templating import Jinja2Templates
 
 dp = Dispatcher()
 dp.include_routers(router)
-
+templates = Jinja2Templates(directory="templates")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -35,19 +35,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
-origins = [
-   "http://localhost",
-   "http://127.0.0.1",
-   "http://localhost:5033",
- ]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.post(f'/{URL}/webhook')
 async def webhook(request: Request) -> None:
@@ -55,32 +42,18 @@ async def webhook(request: Request) -> None:
     await dp.feed_update(bot, update)
 
 @app.get(f'/{URL}', response_class=HTMLResponse)
-async def resumes(request: Request):
-    return "Resume list"
+async def resumes(request: Request,cache_key:str):
+    cached_data = await redis.get(cache_key)
+    if cached_data:
+        resumes = json.loads(cached_data)
+        return templates.TemplateResponse('index.html', {
+            "request": request,
+            "resumes": resumes,
+        })
 
+    return "Resumes not found"
 
-@app.get(f"/{URL}/logs", response_class=HTMLResponse)
-async def get_logs(request: Request):
-    log_file_path = "Logfile.txt"  # Вкажіть шлях до вашого файлу логів
-    if os.path.exists(log_file_path):
-        try:
-            with open(log_file_path, "r", encoding="utf-8") as file:
-                content = file.readlines()
-                last_100_lines = ''.join(content[-100:])
-            html_content = f"""
-                <html>
-                    <body>
-                        <h1>Логи</h1>
-                        <pre>{last_100_lines}</pre>
-                    </body>
-                </html>
-                """
-            return HTMLResponse(content=html_content)
-        except:
-            print("файл не відкрився")
-    else:
-        return "<html><body><h1>Файл логів не знайдено</h1></body></html>"
 
 if __name__ == "__main__":
-    port = 3021 if SERV else 3055
-    uvicorn.run(app, host="127.0.0.1", port=port)
+    port = 3021 if SERV else 5000
+    uvicorn.run(app, host="0.0.0.0", port=port)

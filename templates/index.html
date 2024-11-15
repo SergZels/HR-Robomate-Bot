@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Всі резюме</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .resume {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .resume h1, .resume h2 {
+            margin: 0 0 10px;
+        }
+        .resume p {
+            margin: 5px 0;
+        }
+        .section {
+            margin-top: 20px;
+        }
+        .skills, .languages, .experience {
+            list-style: none;
+            padding: 0;
+        }
+        .skills li, .languages li {
+            display: inline-block;
+            background: #eef;
+            margin: 5px;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+ {% for r in resumes %}
+<div class="resume">
+    <h1>{{ r["name"] }}</h1>
+    <h3><strong></strong> {{ r["position"] or "Не вказано" }}</h3>
+    <p><strong>Балів:</strong> {{ r["points"]  }}</p>
+
+    <p><strong>Вік: </strong>{{ r["Вік:"] or "Не вказано" }} </p>
+    <p><strong>Бажана заробітня плата:</strong> {{ r["salary"] or "Не вказано" }}</p>
+    <p><strong>Резюме link:</strong> <a href="{{ r['linkURL'] }}">{{ r["linkURL"] }}</a></p>
+    <p><strong>Дата публікування резюме:</strong> {{ r["resume_time"] }}</p>
+
+    <div class="section">
+        <h2>Деталі</h2>
+        <p><strong>Зайнятість:</strong> {{ r.get("Зайнятість:", "Не вказано") }}</p>
+        <p><strong>Місто:</strong> {{ r.get("Місто:", "Не вказано") }}</p>
+        <p><strong>Готовий працювати:</strong> {{ r.get("Готовий працювати:", "Не вказано") }}</p>
+    </div>
+
+    <div class="section">
+        <h2>Мови</h2>
+        <ul class="languages">
+            {% for lang in r["languages"] %}
+            <li>{{ lang }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Досвід</h2>
+        <ul class="experience">
+            {% for exp in r["experience"] %}
+            <li><strong>{{ exp["title"] }}</strong>: {{ exp["duration"] }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Навички</h2>
+        <ul class="skills">
+            {% for skill in r["skills"] %}
+            <li>{{ skill }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+ {% endfor %}
+</body>
+</html>
+

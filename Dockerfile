@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Копіюємо всі файли проекту до робочої директорії контейнера
 COPY . .
-EXPOSE 3055
+EXPOSE 5000
 
 # Вказуємо команду для запуску FastAPI додатка
-CMD ["uvicorn", "main:app", "--host", "127.0.0.1", "--port", "3055"]
+CMD ["uvicorn", "main:app", "--host", "127.0.0.1", "--port", "5000"]

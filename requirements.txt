@@ -12,5 +12,6 @@ sqlalchemy
 lxml
 beautifulsoup4
 pandas
+redis
 
 

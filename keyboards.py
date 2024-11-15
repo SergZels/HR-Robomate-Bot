@@ -22,7 +22,7 @@ experience.adjust(1)
 location_keyboard = types.ReplyKeyboardMarkup(
     resize_keyboard=True,
     keyboard=[
-        [types.KeyboardButton(text="Вся Україна")]
+        [types.KeyboardButton(text="Вся Україна (віддалено)")]
     ]
 )
 
@@ -48,3 +48,4 @@ def build_keyboard(url: str) -> types.InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.add(types.InlineKeyboardButton(text="Перейти на сайт", url=url))
     return builder.as_markup()
+
