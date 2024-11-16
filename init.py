@@ -20,7 +20,7 @@ else:
 
 URL = ''  #os.getenv("URL")
 WebhookURL= os.getenv("WebhookURL")
-redis = aioredis.from_url("redis://localhost:6379", decode_responses=True)
+redis = aioredis.from_url("redis://redishrbot:6379", decode_responses=True)
 bot = Bot(token=API_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
 class AsyncFileHandler(logging.FileHandler):  # для асинхронного логування
