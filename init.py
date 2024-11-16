@@ -5,6 +5,8 @@ import os
 from aiogram.enums import ParseMode
 import redis.asyncio as aioredis
 from dataclasses import dataclass, field
+import logging
+import asyncio
 
 load_dotenv()
 SERV = os.getenv("server") == 'production'
@@ -21,8 +23,20 @@ WebhookURL= os.getenv("WebhookURL")
 redis = aioredis.from_url("redis://localhost:6379", decode_responses=True)
 bot = Bot(token=API_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
+class AsyncFileHandler(logging.FileHandler):  # для асинхронного логування
+    def emit(self, record):
+        loop = asyncio.get_event_loop()
+        loop.run_in_executor(None, super().emit, record)
 
 
+logger = logging.getLogger('async_logger')
+logger.setLevel(logging.INFO)
+handler = AsyncFileHandler('Logfile.txt')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+#-----------------бали----------------------------------
 @dataclass
 class LanguageLevel:
     levels: dict[str, int] = field(default_factory=lambda: {
@@ -47,3 +61,5 @@ class PointsConfig:
     skill_match: int = 5
     experience_month: float = 0.2
     date_resume: DateResumePoints = field(default_factory=DateResumePoints)
+
+

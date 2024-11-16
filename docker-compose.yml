@@ -4,12 +4,19 @@ services:
     build:
       context: .
     container_name: HRBot
-    command: uvicorn main:app --host 127.0.0.1 --port 3055
+    command: uvicorn main:app --host 127.0.0.1 --port 5000
     restart: always
     volumes:
       - ./:/usr/src/app/
     ports:
       - "5000:5000"
+
+  redishrbot:
+    image: "redis:latest"
+    container_name: "RedisHRBot"
+    ports:
+      - "6379:6379"
+    restart: always
 
 
 

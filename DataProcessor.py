@@ -1,5 +1,5 @@
-from init import PointsConfig
-from datetime import datetime,timedelta
+from init import PointsConfig, logger
+from datetime import datetime, timedelta
 import re
 
 
@@ -9,29 +9,38 @@ class DataProcessor:
         self.points = PointsConfig()
 
     def filter_by_city(self, data: list[dict[str, str | None]], city_name: str) -> list[dict[str, str | None]]:
+        """якщо вказано місто то повертає лише резюме із із кандидатами із цього міста """
         if city_name == "Вся Україна (віддалено)":
             return data
         return [item for item in data if item.get('Місто:') == city_name]
 
-    def filter_old_resumes(self,data, days_threshold=21):
+    def filter_old_resumes(self, data, days_threshold=21):
         """відфільтруємо старі резюме, гадаю більше 3ох тижнів неактуальні """
         threshold_date = datetime.now() - timedelta(days=days_threshold)
         filtered_resumes = [
-            r for r in data if datetime.strptime(r['resume_time'], '%Y-%m-%d %H:%M:%S') > threshold_date
+            item for item in data if datetime.strptime(item.get('resume_time'), '%Y-%m-%d %H:%M:%S') > threshold_date
         ]
         return filtered_resumes
 
     def filter_by_salary(self, data: list[dict[str, str | None]], max_salary: str) -> list[dict[str, str | None]]:
+        """фільтруємо по максимальній зп """
+        try:
+            max_salary = int(max_salary)
+        except ValueError as e:
+            logger.error(f"Помилка у фільтрі зарплат {e}")
+            return data  # Якщо максимальна зарплата некоректна, повертаємо весь список
+
         filtered_data = []
         for item in data:
             salary = item.get('salary')
             if salary:
                 try:
                     numeric_salary = int(salary)
-                    if numeric_salary <= int(max_salary):
+                    if numeric_salary <= max_salary:
                         filtered_data.append(item)
-                except ValueError:
+                except ValueError as e:
                     # Якщо зарплата не є числом, пропускаємо
+                    logger.error(f"Помилка у фільтрі зарплат {e}")
                     continue
             else:
                 # Якщо зарплата не вказана, додаємо до результату
@@ -39,6 +48,7 @@ class DataProcessor:
         return filtered_data
 
     def apply_filters(self, city_name: str = None, max_salary: str = None) -> list[dict[str, str | None]]:
+        """послідовно застосовує фільтри"""
         filtered_data = self.data
 
         if city_name is not None:
@@ -55,35 +65,48 @@ class DataProcessor:
         return len(resume['skills']) * self.points.skill
 
     def __daysDifferenPoint(self, resume: dict[str, str | None]) -> int:
-        resume_time = datetime.strptime(resume['resume_time'], '%Y-%m-%d %H:%M:%S')
-        today = datetime.now()
-        days_difference = (today - resume_time).days
-        if days_difference <= 1:
-            return self.points.date_resume.points["d<=1"]
-        elif 1 < days_difference <= 7:
-            return self.points.date_resume.points["1<d<=7"]
-        elif 7 < days_difference <= 14:
-            return self.points.date_resume.points["7<d<14"]
-        elif 14 < days_difference:
-            return 0
+        """повертає бали по даті розміщення резюме - нові більш пріорітетні ніж старі"""
+        try:
+            resume_time = datetime.strptime(resume['resume_time'], '%Y-%m-%d %H:%M:%S')
+            today = datetime.now()
+            days_difference = (today - resume_time).days
+            if days_difference <= 1:
+                return self.points.date_resume.points["d<=1"]
+            elif 1 < days_difference <= 7:
+                return self.points.date_resume.points["1<d<=7"]
+            elif 7 < days_difference <= 14:
+                return self.points.date_resume.points["7<d<14"]
+            elif 14 < days_difference:
+                return 0
+        except (ValueError, TypeError) as e:
+            logger.error(f"Помилка у функції підрахунку балів по даті {e}")
+            return 0  # Якщо дата некоректна, повертаємо 0 балів
 
     def __englishLevelPoints(self, resume: dict[str, str | None]) -> int:
-        for lang in resume.get('languages', []):
-            if 'Англійська' in lang:
-                level = lang.split('—')[-1].strip()
-                if level == 'середній':
-                    return self.points.language.levels["середній"]
-                elif level == 'вище середнього':
-                    return self.points.language.levels["вище середнього"]
-                elif level == 'просунутий':
-                    return self.points.language.levels["просунутий"]
-                elif level == 'вільно':
-                    return self.points.language.levels["вільно"]
+        """повертає бали за знання англійської (англійська №1 мова якою має володіти програміст :)"""
+        try:
+            for lang in resume.get('languages', []):
+                if 'Англійська' in lang:
+                    level = lang.split('—')[-1].strip()
+                    if level == 'середній':
+                        return self.points.language.levels["середній"]
+                    elif level == 'вище середнього':
+                        return self.points.language.levels["вище середнього"]
+                    elif level == 'просунутий':
+                        return self.points.language.levels["просунутий"]
+                    elif level == 'вільно':
+                        return self.points.language.levels["вільно"]
 
-        return 0
+            return 0
+        except (ValueError, TypeError) as e:
+            logger.error(f"Помилка у функції підрахунку балів по рівні англійської {e}")
+            return 0
 
     def __skillsMatchesPoints(self, skills_str: str, resume: dict[str, str | None]) -> int:
-        skills = resume['skills']
+        """повертає бали за співпадіння навичок кандидата та наших очікуваних """
+        skills = resume.get('skills', [])
+        if not skills:
+            return 0
         skills_lower = {skill.lower() for skill in skills}
 
         # Розділяємо рядок required_skills і також приводимо до нижнього регістру
@@ -95,12 +118,15 @@ class DataProcessor:
         return round(len(matches) * self.points.skill_match)
 
     def __experiencePoint(self, resume: dict[str, str | None]) -> int:
+        """повертає бали за кількість вказаних навичок"""
         total_months = 0
 
         # Регулярні вирази для пошуку кількості років і місяців
         years_pattern = re.compile(r'(\d+)\s*р(ік|оки|оків)')
         months_pattern = re.compile(r'(\d+)\s*місяц(ь|і|ів)')
-        experience = resume['experience']
+        experience = resume.get('experience', [])
+        if not experience:
+            return 0
 
         for item in experience:
             duration = item.get('duration', '')
@@ -121,15 +147,18 @@ class DataProcessor:
 
     def pointsDetermination(self, skills: str, filtered_data: list[dict[str, str | None]]) -> list[
         dict[str, str | None]]:
-
+        """підраховує бали"""
         for resume in filtered_data:
             print(resume)
-            resume['points'] = self.__skillsCount(resume)
-            resume['points'] += self.__daysDifferenPoint(resume)
-            resume['points'] += self.__englishLevelPoints(resume)
-            resume['points'] += self.__skillsMatchesPoints(skills, resume)
-            resume['points'] += self.__experiencePoint(resume)
-
+            try:
+                resume['points'] = self.__skillsCount(resume)
+                resume['points'] += self.__daysDifferenPoint(resume)
+                resume['points'] += self.__englishLevelPoints(resume)
+                resume['points'] += self.__skillsMatchesPoints(skills, resume)
+                resume['points'] += self.__experiencePoint(resume)
+            except Exception as e:
+                logger.error(f"Помилка у функції підрахунку балів {e}")
+                continue
 
         sorted_data = sorted(filtered_data, key=lambda x: x['points'], reverse=True)
 

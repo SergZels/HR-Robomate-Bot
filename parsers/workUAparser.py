@@ -1,16 +1,19 @@
 import re
 import httpx
 from bs4 import BeautifulSoup
-
+from init import logger
 
 class WorkUaParser:
     """Клас для парсингу резюме з сайту Work.ua"""
 
     def __init__(self, position: str, experience: str):
         self.position: str = position
-        self.base_url: str = f'https://www.work.ua/resumes-{self.position.replace(" ", "-")}/'
+        self.base_url: str = f'https://www.work.ua/resumes-{self.__corectPosition(position)}/'
         self.experience: str = experience
 
+    def __corectPosition(self, position:str)->str:
+        """ коригуємо символи для коректного пошуку C#, C++ програмістів"""
+        return position.replace(" ", "-").replace("#","%23").replace("++","%2B%2B")
 
     def __fetch_html(self, url: str) -> str | None:
         """Завантажує HTML-сторінку за заданим URL."""
@@ -19,10 +22,11 @@ class WorkUaParser:
             response.raise_for_status()
             return response.text
         except httpx.RequestError as e:
-            print(f"Помилка під час запиту: {e}")
+            logger.error(f"Помилка під час запиту: {e}")
             return None
 
-    def _experience_to_parameter(self, experience: str) -> str:
+    def __experience_to_parameter(self, experience: str) -> str:
+        """формує параметер досвіду"""
         experience_mapping = {
             "Без досвіду": "experience=0",
             "До 1 року": "experience=1",
@@ -123,11 +127,11 @@ class WorkUaParser:
         """Парсить всі резюме """
         page = 1
         all_resume_list = []
-        experienceParameter = self._experience_to_parameter(self.experience)
+        experienceParameter = self.__experience_to_parameter(self.experience)
         while True:
             url = f'{self.base_url}?page={page}&{experienceParameter}'
             html = self.__fetch_html(url)
-            if not html:
+            if not html or page>20: # Якщо даних немає або кілкість сторінок більша за 20 - зупиняємося
                 break
 
             soup = BeautifulSoup(html, "lxml")
@@ -150,16 +154,4 @@ class WorkUaParser:
         """Повертає резюме """
         all_resume_list = self.parse_all_resumes()
         return all_resume_list
-    # print(all_resume_list)
 
-    # Фільтрація
-
-    # df = pd.DataFrame(all_resume_list)
-    # if self.location:
-    #     filtered_df = df[(df["Місто:"] == self.location)]
-    # return filtered_df
-
-# parser = WorkUaParser(position="програміст golang", location="Одеса" )
-#
-# resumes = parser.getResumes()
-# print(resumes)

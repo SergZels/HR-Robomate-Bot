@@ -46,6 +46,6 @@ salary_keyboard = types.ReplyKeyboardMarkup(
 
 def build_keyboard(url: str) -> types.InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.add(types.InlineKeyboardButton(text="Перейти на сайт", url=url))
+    builder.add(types.InlineKeyboardButton(text="Переглянути на сайті", url=url))
     return builder.as_markup()
 
