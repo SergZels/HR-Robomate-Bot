@@ -57,7 +57,7 @@ async def parser_task(chat_id: int, exchange: str, specialization: str, experien
             parse_mode="HTML"
         )
     await bot.send_message(chat_id,
-                           f"Переглянути більше кандидатів можна за посиланням: http://zelse.asuscomm.com:5000?cache_key={cache_key}\n"
+                           f"Переглянути більше кандидатів можна за посиланням: http://127.0.0.1:5000?cache_key={cache_key}\n"
                            f"Успіхів у пошуку нового співробітника 🧑‍💻!",
                            parse_mode="HTML", disable_web_page_preview=True)
 
